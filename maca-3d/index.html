@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MAÇA 3D Walkthrough</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #e9e4dc; overflow: hidden; font-family: Inter, system-ui, sans-serif; }
+    canvas { display: block; }
+    #ui { position: fixed; left: 16px; bottom: 16px; display: flex; gap: 8px; align-items: center; color: #2c3326; }
+    #ui button { font: inherit; padding: 8px 14px; border-radius: 999px; border: 0; background: rgba(255,255,255,.85); color: #2c3326; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+    #ui span { background: rgba(255,255,255,.7); padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+    body.record #ui { display: none; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="ui">
+    <button id="mode">Explore freely</button>
+    <span id="hint">Playing walkthrough</span>
+  </div>
+  <script type="module" src="./scene.js"></script>
+</body>
+</html>

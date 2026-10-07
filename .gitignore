@@ -1,0 +1,4 @@
+node_modules/
+maca-3d/out/frames/
+maca-3d/out/still-*.jpg
+maca-3d/out/render.log
