@@ -248,7 +248,7 @@ const NICHE_B = { u0: 3.9, u1: 7.4, v0: 1.12, v1: 1.95 };
 }
 
 // right plaster wall with an arched opening near the front, oak wainscot below
-const ARCH = { u0: 0.8, u1: 2.2, spring: 2.0 };
+const ARCH = { u0: 1.5, u1: 2.9, spring: 2.0 };
 {
   const r = (ARCH.u1 - ARCH.u0) / 2;
   const s = new THREE.Shape();
@@ -448,14 +448,14 @@ poster((g, w, h) => {
   g.font = 'italic 130px "DejaVu Serif", serif'; g.fillText('Matcha', 60, 290);
   g.beginPath(); g.arc(500, 80, 60, 0, Math.PI * 2); g.fillStyle = '#2f5a2b'; g.fill();
   g.fillStyle = '#fff'; g.font = 'bold 36px Inter, sans-serif'; g.textAlign = 'center'; g.fillText('NEW', 500, 93);
-}, -3.2);
+}, -3.6);
 poster((g, w, h) => {
   g.fillStyle = '#eef0e6'; g.fillRect(0, 0, w, h);
   drawGlass(g, 80, 120, 260, 340, '#6b9a3c');
   g.fillStyle = '#2f5fa8'; g.beginPath(); g.ellipse(390, 640, 150, 110, 0, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#9dc36d'; g.beginPath(); g.ellipse(390, 560, 140, 40, 0, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#2f4a25'; g.font = 'bold 54px Inter, sans-serif'; g.fillText('blue', 380, 180); g.fillText('matcha', 360, 240);
-}, -4.35);
+}, -4.75);
 poster((g, w, h) => {
   g.fillStyle = '#f4f1e9'; g.fillRect(0, 0, w, h);
   g.fillStyle = '#2f4a25'; g.font = 'bold 50px Inter, sans-serif'; g.textAlign = 'center'; g.fillText('MATCHA MENU', w / 2, 90);
@@ -465,7 +465,7 @@ poster((g, w, h) => {
     g.fillStyle = '#2f4a25'; g.font = '26px Inter, sans-serif'; g.fillText(['Classic', 'Iced', 'Oat', 'Berry', 'Yuzu', 'Cloud'][i], x, y + 220);
     g.fillRect(x - 40, y + 240, 80, 3);
   }
-}, -5.5);
+}, -5.9);
 
 // ---------- counter ----------
 {
@@ -621,6 +621,11 @@ poster((g, w, h) => {
     ['1. matcha', '2. oxygen', '3. water'].forEach((t, i) => g.fillText(t, 20, 80 + i * 90));
   }, 512, 320, 0.95, 0.6);
   deco.position.set(4.9, 2.2, -0.012); deco.rotation.y = Math.PI; scene.add(deco);
+  const cool = textPlane((g) => {
+    g.font = '700 150px Inter, sans-serif'; g.strokeStyle = '#9cc48a'; g.lineWidth = 5; g.strokeText('COOL', 10, 150);
+    g.font = '36px Inter, sans-serif'; g.fillStyle = '#9cc48a'; g.fillText('people', 420, 90); g.fillText('drink matcha', 420, 135);
+  }, 700, 180, 1.1, 0.28);
+  cool.position.set(2.75, 1.2, -0.012); cool.rotation.y = Math.PI; scene.add(cool);
 
   // floating bench + planter along the far wall, pebble strip below
   const bench = std({ map: plaster.map, color: '#f6f1ea', roughness: 0.85 });
@@ -641,8 +646,8 @@ poster((g, w, h) => {
   for (const z of [-1.6, -4.0, -6.4]) bx(5.0, 5.48, 0.47, 0.52, z - 0.3, z + 0.3, cushion);
 
   // trailing grasses in the planter
-  const blade = new THREE.PlaneGeometry(0.03, 0.22); blade.translate(0, 0.11, 0);
-  const N = 4200;
+  const blade = new THREE.PlaneGeometry(0.014, 0.2); blade.translate(0, 0.1, 0);
+  const N = 7000;
   const grass = new THREE.InstancedMesh(blade, std({ color: '#ffffff', roughness: 0.75, side: THREE.DoubleSide }), N);
   for (let i = 0; i < N; i++) {
     const droop = rand() < 0.3;
@@ -655,13 +660,109 @@ poster((g, w, h) => {
   }
   scene.add(grass);
 
-  // small potted tree by the glass
-  cyl(0.28, 0.24, 0.42, bench, 5.1, 0, -0.45, 32);
-  cyl(0.04, 0.06, 1.3, std({ color: '#5a4a3a', roughness: 0.9 }), 5.1, 0.42, -0.45, 8);
-  const foliage = std({ color: '#4f6f34', roughness: 0.85, flatShading: true });
-  for (let i = 0; i < 9; i++) {
-    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(range(0.16, 0.26), 1), foliage);
-    m.position.set(5.1 + range(-0.25, 0.25), range(1.3, 2.0), -0.45 + range(-0.25, 0.25)); scene.add(m);
+  // twisted pine in a rounded-triangle planter, centred in front of the glass
+  {
+    const PX = 3.75, PZ = -0.95;
+    const rounded = (target, pts, r) => {
+      pts.forEach((p, i) => {
+        const prev = pts[(i + pts.length - 1) % pts.length], next = pts[(i + 1) % pts.length];
+        const p1 = p.clone().addScaledVector(prev.clone().sub(p).normalize(), r);
+        const p2 = p.clone().addScaledVector(next.clone().sub(p).normalize(), r);
+        i ? target.lineTo(p1.x, p1.y) : target.moveTo(p1.x, p1.y);
+        target.quadraticCurveTo(p.x, p.y, p2.x, p2.y);
+      });
+      target.closePath();
+      return target;
+    };
+    const tri = [[0, 0.5], [-0.55, -0.32], [0.55, -0.32]].map(([x, y]) => new THREE.Vector2(x, y));
+    const shape = rounded(new THREE.Shape(), tri, 0.18);
+    shape.holes.push(rounded(new THREE.Path(), tri.map((v) => v.clone().multiplyScalar(0.84)), 0.13));
+    const pg = new THREE.ExtrudeGeometry(shape, { depth: 0.36, bevelEnabled: false });
+    const planterBox = new THREE.Mesh(pg, std({ color: '#cfc8bd', roughness: 0.85 }));
+    planterBox.rotation.x = -Math.PI / 2; planterBox.position.set(PX, 0, PZ); scene.add(planterBox);
+    const fillShape = rounded(new THREE.Shape(), tri.map((v) => v.clone().multiplyScalar(0.84)), 0.13);
+    const fill = new THREE.Mesh(new THREE.ShapeGeometry(fillShape), std({ color: '#5d5a56', roughness: 1 }));
+    fill.rotation.x = -Math.PI / 2; fill.position.set(PX, 0.28, PZ); scene.add(fill);
+    const rockGeo = new THREE.IcosahedronGeometry(0.035, 0);
+    const rocks = new THREE.InstancedMesh(rockGeo, std({ color: '#ffffff', roughness: 0.9, flatShading: true }), 420);
+    const inTri = (x, y) => {
+      const [A, B, C] = tri.map((v) => v.clone().multiplyScalar(0.8));
+      const s1 = (B.x - A.x) * (y - A.y) - (B.y - A.y) * (x - A.x);
+      const s2 = (C.x - B.x) * (y - B.y) - (C.y - B.y) * (x - B.x);
+      const s3 = (A.x - C.x) * (y - C.y) - (A.y - C.y) * (x - C.x);
+      return (s1 >= 0 && s2 >= 0 && s3 >= 0) || (s1 <= 0 && s2 <= 0 && s3 <= 0);
+    };
+    for (let i = 0; i < 420;) {
+      const x = range(-0.5, 0.5), y = range(-0.3, 0.45);
+      if (!inTri(x, y)) continue;
+      o.position.set(PX + x, 0.3, PZ - y);
+      o.rotation.set(range(0, 6), range(0, 6), range(0, 6)); o.scale.set(range(0.7, 1.4), range(0.5, 0.9), range(0.7, 1.4)); o.updateMatrix();
+      rocks.setMatrixAt(i, o.matrix); rocks.setColorAt(i++, col.setHSL(0.08, 0.03, range(0.25, 0.55)));
+    }
+    scene.add(rocks);
+
+    const bark = std({ color: '#8a735a', roughness: 0.95 });
+    const trunkTop = new THREE.Vector3();
+    for (let k = 0; k < 3; k++) {
+      const pts = [];
+      for (let i = 0; i <= 24; i++) {
+        const t = i / 24, ang = k * 2.094 + t * 8, r = 0.05 * (1 - t * 0.45);
+        pts.push(new THREE.Vector3(PX + Math.sin(t * 2.4) * 0.2 + Math.cos(ang) * r, 0.28 + t * 1.3, PZ + Math.sin(t * 4.2) * 0.06 + Math.sin(ang) * r));
+      }
+      scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 80, 0.034 - k * 0.003, 8), bark));
+      if (k === 0) trunkTop.copy(pts[pts.length - 1]);
+    }
+    // cloud-pruned foliage pads on short branches
+    const pads = [];
+    for (let i = 0; i < 9; i++) {
+      const a = i * 2.4 + range(-0.3, 0.3), h = range(1.2, 1.95);
+      const d = 0.25 + (1.95 - h) * 0.45 + range(-0.05, 0.1);
+      pads.push(new THREE.Vector3(PX + 0.12 + Math.cos(a) * d, h, PZ + Math.sin(a) * d * 0.8));
+    }
+    pads.push(new THREE.Vector3(PX + 0.2, 2.1, PZ));
+    for (const c of pads) {
+      const from = new THREE.Vector3(PX + 0.15, Math.min(c.y - 0.1, trunkTop.y), PZ);
+      const mid = from.clone().lerp(c, 0.5).add(new THREE.Vector3(0, 0.06, 0));
+      scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([from, mid, c]), 12, 0.014, 6), bark));
+    }
+    const tuftGeo = new THREE.IcosahedronGeometry(0.06, 0);
+    const PER = 70;
+    const tufts = new THREE.InstancedMesh(tuftGeo, std({ color: '#ffffff', roughness: 0.85, flatShading: true }), pads.length * PER);
+    let ti = 0;
+    for (const c of pads) {
+      const rad = range(0.22, 0.34);
+      for (let j = 0; j < PER; j++) {
+        const a = range(0, 6.28), rr = Math.sqrt(rand()) * rad;
+        o.position.set(c.x + Math.cos(a) * rr, c.y + range(-0.04, 0.09) * (1 - rr / rad + 0.3), c.z + Math.sin(a) * rr);
+        o.rotation.set(range(0, 6), range(0, 6), range(0, 6)); o.scale.set(range(0.8, 1.5), range(0.5, 0.9), range(0.8, 1.5)); o.updateMatrix();
+        tufts.setMatrixAt(ti, o.matrix);
+        tufts.setColorAt(ti++, col.setHSL(range(0.24, 0.3), range(0.3, 0.45), range(0.17, 0.3)));
+      }
+    }
+    scene.add(tufts);
+  }
+
+  // glass-fronted cup wall between the window and the arch
+  {
+    const CX0 = X0, CX1 = X0 + 0.28, CY0 = 0, CY1 = 2.75, CZ0 = -ARCH.u0 + 0.2, CZ1 = -0.35;
+    const frame = std({ color: '#56704a', roughness: 0.5 });
+    bx(CX0, CX1, CY0, CY0 + 0.05, CZ0, CZ1, frame);
+    bx(CX0, CX1, CY1 - 0.05, CY1, CZ0, CZ1, frame);
+    bx(CX0, CX1, CY0, CY1, CZ0, CZ0 + 0.04, frame);
+    bx(CX0, CX1, CY0, CY1, CZ1 - 0.04, CZ1, frame);
+    bx(CX0, CX0 + 0.03, CY0, CY1, CZ0, CZ1, std({ color: '#2d3f27', roughness: 0.7 }));
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(CZ1 - CZ0, CY1 - CY0), glass);
+    g.position.set(CX1, (CY0 + CY1) / 2, (CZ0 + CZ1) / 2); g.rotation.y = Math.PI / 2; scene.add(g);
+    const cupGeo = new THREE.CylinderGeometry(0.044, 0.033, 0.13, 16);
+    const N = 380;
+    const cups = new THREE.InstancedMesh(cupGeo, std({ color: '#ffffff', roughness: 0.45 }), N);
+    const cupCols = ['#2f6b35', '#3f8a3c', '#1f4d27', '#d9d6c8', '#c98a5a', '#8fb85a', '#e9e6dc'];
+    for (let i = 0; i < N; i++) {
+      o.position.set(range(CX0 + 0.08, CX1 - 0.06), range(CY0 + 0.1, CY1 - 0.12), range(CZ0 + 0.09, CZ1 - 0.09));
+      o.rotation.set(range(-1.4, 1.4), range(0, 6.28), range(-1.4, 1.4)); o.scale.setScalar(1); o.updateMatrix();
+      cups.setMatrixAt(i, o.matrix); cups.setColorAt(i, col.set(pick(cupCols)));
+    }
+    scene.add(cups);
   }
 
   // leaf line drawing on the back wall
@@ -716,11 +817,11 @@ poster((g, w, h) => {
     sh.position.set(x + 0.05, 0.86, z - 0.05); sh.scale.y = 1.2; scene.add(sh);
   };
   // chair backs face away from the table: back sits on +z of the chair, so ry turns it outward
-  for (const z of [-1.7, -3.0, -4.3, -5.6, -6.9]) { table(4.5, z); chair(3.9, z, -Math.PI / 2); }
+  for (const z of [-2.3, -3.5, -4.7, -5.9, -7.1]) { table(4.5, z); chair(3.9, z, -Math.PI / 2); }
   for (const z of [-3.6, -5.2, -6.8]) { table(2.75, z); chair(2.75, z + 0.6, 0); chair(2.75, z - 0.6, Math.PI); }
   const glow = std({ color: '#fff4e2', emissive: '#ffdcae', emissiveIntensity: 1.6, roughness: 0.3 });
   const cord = std({ color: '#222', roughness: 0.5 });
-  for (const [x, z, y, r] of [[4.3, -1.3, 1.75, 0.13], [4.3, -3.6, 1.9, 0.15], [4.6, -5.9, 1.7, 0.12], [3.0, -4.4, 2.0, 0.13], [3.2, -7.4, 1.85, 0.15]]) {
+  for (const [x, z, y, r] of [[4.4, -2.3, 1.85, 0.13], [4.4, -4.7, 1.9, 0.15], [4.4, -7.1, 1.75, 0.12], [2.75, -3.6, 1.95, 0.13], [2.6, -6.8, 1.85, 0.15]]) {
     const ball = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 20), glow);
     ball.position.set(x, y, z); scene.add(ball);
     cyl(0.004, 0.004, H - y - r, cord, x, y + r, z, 6);
@@ -910,11 +1011,11 @@ const KEYS = [
   [20.5, [1.2, 1.6, -7.3], 102, -3],
   [24, [1.25, 1.6, -8.25], 176, -3],
   [27.5, [1.0, 1.6, -3.3], 205, -3],
-  [30.5, [0.45, 1.6, -1.55], 270, -2],
-  [33.5, [2.6, 1.6, -1.5], 272, -1],
-  [37, [3.3, 1.6, -1.0], 330, -5],
-  [41, [3.35, 1.55, -2.9], 350, -4],
-  [45, [3.0, 1.5, -4.4], 292, -3],
+  [30.5, [0.45, 1.6, -2.2], 270, -2],
+  [33.5, [2.6, 1.6, -2.3], 262, -1],
+  [37, [3.3, 1.6, -3.4], 160, 0],
+  [41, [3.5, 1.55, -6.2], 182, 1],
+  [45, [3.6, 1.45, -8.2], 180, 1],
 ];
 const DURATION = 46.5;
 const posCurve = new THREE.CatmullRomCurve3(KEYS.map((k) => new THREE.Vector3(...k[1])), false, 'centripetal');
