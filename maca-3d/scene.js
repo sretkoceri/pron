@@ -258,13 +258,6 @@ const ARCH = { u0: 0.8, u1: 2.2, spring: 2.0 };
   extrudedWall(s, 0.25, plaster, RW);
   bx(RW - 0.025, RW, 0, 1.1, -9, -ARCH.u1, oak);
   bx(RW - 0.025, RW, 0, 1.1, -ARCH.u0, -0.03, oak);
-  // sunlit alcove beyond the arch
-  const alc = std({ map: plaster.map, color: '#fffaf2', roughness: 0.9, side: THREE.BackSide });
-  bx(RW + 0.25, RW + 1.6, 0, 2.95, -ARCH.u1 - 0.3, -ARCH.u0 + 0.3, alc);
-  bx(RW + 0.9, RW + 1.55, 0, 0.45, -ARCH.u1 - 0.1, -ARCH.u0 + 0.1, oak);
-  const l = new THREE.PointLight('#ffe2bd', 6, 4, 1.6);
-  l.position.set(RW + 1.1, 2.4, -1.5);
-  scene.add(l);
 }
 
 // back wall: concrete with flush doors and a pillar
@@ -596,6 +589,148 @@ poster((g, w, h) => {
   }
 }
 
+// ---------- seating room beyond the arch ----------
+// x from 1.95 (back of the arched wall) to 5.6, same depth as the shop, glazed to the terrace.
+{
+  const X0 = RW + 0.25, X1 = 5.6, RD = 9;
+  const plane = (w, h, mat) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    m.geometry.attributes.uv.array.forEach((_, i, a) => { a[i] *= i % 2 ? h : w; });
+    scene.add(m);
+    return m;
+  };
+  const f = plane(X1 - X0, RD, floorMat); f.rotation.x = -Math.PI / 2; f.position.set((X0 + X1) / 2, 0, -RD / 2);
+  const c = plane(X1 - X0, RD, ceilingMat); c.rotation.x = Math.PI / 2; c.position.set((X0 + X1) / 2, H, -RD / 2);
+  const b = plane(X1 - X0, H, plaster); b.position.set((X0 + X1) / 2, H / 2, -RD);
+  bx(X1, X1 + 0.25, 0, H, -RD, 0, plaster);
+  // walnut wainscot on the room side of the arched wall
+  bx(X0, X0 + 0.025, 0, 1.1, -RD, -ARCH.u1, walnut);
+  bx(X0, X0 + 0.025, 0, 1.1, -ARCH.u0, -0.03, walnut);
+  cassette(3.8, -4.2);
+
+  // glazing to the terrace with matcha lettering
+  for (const x of [X0 + 0.02, 3.15, 4.35, X1 - 0.02]) bx(x - 0.025, x + 0.025, 0, H, -0.03, 0.03, mullionMat);
+  bx(X0, X1, 0, 0.05, -0.03, 0.03, mullionMat);
+  bx(X0, X1, 2.55, 2.6, -0.03, 0.03, mullionMat);
+  for (const [a, bb, y0, y1] of [[X0, X1, 0.05, 2.55], [X0, X1, 2.6, H]]) {
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(bb - a, y1 - y0), glass);
+    g.position.set((a + bb) / 2, (y0 + y1) / 2, 0); scene.add(g);
+  }
+  const deco = textPlane((g) => {
+    g.font = 'italic 64px "DejaVu Serif", serif'; g.fillStyle = '#9cc48a';
+    ['1. matcha', '2. oxygen', '3. water'].forEach((t, i) => g.fillText(t, 20, 80 + i * 90));
+  }, 512, 320, 0.95, 0.6);
+  deco.position.set(4.9, 2.2, -0.012); deco.rotation.y = Math.PI; scene.add(deco);
+
+  // floating bench + planter along the far wall, pebble strip below
+  const bench = std({ map: plaster.map, color: '#f6f1ea', roughness: 0.85 });
+  bx(5.25, X1, 0, 0.4, -8.6, -0.8, bench);
+  bx(4.95, X1, 0.4, 0.47, -8.6, -0.8, bench);
+  bx(5.22, X1, 0.95, 1.35, -8.6, -0.8, bench);
+  const pebbleGeo = new THREE.IcosahedronGeometry(0.025, 1); pebbleGeo.scale(1, 0.55, 0.8);
+  const pebbles = new THREE.InstancedMesh(pebbleGeo, std({ color: '#ffffff', roughness: 0.8 }), 1800);
+  const o = new THREE.Object3D(), col = new THREE.Color();
+  for (let i = 0; i < 1800; i++) {
+    o.position.set(range(4.82, 5.25), 0.008, range(-8.55, -0.85));
+    o.rotation.set(0, range(0, 6.28), 0); o.scale.setScalar(range(0.6, 1.4)); o.updateMatrix();
+    pebbles.setMatrixAt(i, o.matrix);
+    pebbles.setColorAt(i, col.setHSL(range(0.07, 0.1), range(0.08, 0.2), range(0.6, 0.8)));
+  }
+  scene.add(pebbles);
+  const cushion = std({ color: '#6f8a4a', roughness: 0.95 });
+  for (const z of [-1.6, -4.0, -6.4]) bx(5.0, 5.48, 0.47, 0.52, z - 0.3, z + 0.3, cushion);
+
+  // trailing grasses in the planter
+  const blade = new THREE.PlaneGeometry(0.03, 0.22); blade.translate(0, 0.11, 0);
+  const N = 4200;
+  const grass = new THREE.InstancedMesh(blade, std({ color: '#ffffff', roughness: 0.75, side: THREE.DoubleSide }), N);
+  for (let i = 0; i < N; i++) {
+    const droop = rand() < 0.3;
+    o.position.set(droop ? range(5.18, 5.3) : range(5.25, 5.58), droop ? 1.33 : 1.34, range(-8.55, -0.85));
+    o.rotation.set(droop ? range(2.0, 2.8) : range(-0.6, 0.6), range(0, 6.28), droop ? range(-0.3, 0.3) : range(-0.6, 0.6), 'YXZ');
+    if (droop) { o.rotation.order = 'XYZ'; o.rotation.set(0, 0, range(1.9, 2.7)); }
+    o.scale.set(1, droop ? range(0.8, 1.6) : range(0.5, 1.3), 1); o.updateMatrix();
+    grass.setMatrixAt(i, o.matrix);
+    grass.setColorAt(i, col.setHSL(range(0.2, 0.28), range(0.3, 0.5), range(0.14, 0.28)));
+  }
+  scene.add(grass);
+
+  // small potted tree by the glass
+  cyl(0.28, 0.24, 0.42, bench, 5.1, 0, -0.45, 32);
+  cyl(0.04, 0.06, 1.3, std({ color: '#5a4a3a', roughness: 0.9 }), 5.1, 0.42, -0.45, 8);
+  const foliage = std({ color: '#4f6f34', roughness: 0.85, flatShading: true });
+  for (let i = 0; i < 9; i++) {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(range(0.16, 0.26), 1), foliage);
+    m.position.set(5.1 + range(-0.25, 0.25), range(1.3, 2.0), -0.45 + range(-0.25, 0.25)); scene.add(m);
+  }
+
+  // leaf line drawing on the back wall
+  const leaf = textPlane((g) => {
+    g.strokeStyle = 'rgba(110,104,96,0.7)'; g.lineWidth = 5; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(150, 950); g.bezierCurveTo(250, 600, 500, 250, 900, 80); g.stroke();
+    g.beginPath(); g.moveTo(900, 80); g.bezierCurveTo(650, 120, 350, 380, 260, 720); g.stroke();
+    g.beginPath(); g.moveTo(900, 80); g.bezierCurveTo(950, 380, 700, 700, 330, 820); g.stroke();
+    g.beginPath(); g.moveTo(230, 850); g.bezierCurveTo(330, 820, 470, 560, 560, 480); g.stroke();
+  }, 1024, 1024, 2.0, 2.0);
+  leaf.position.set(3.9, 1.6, -RD + 0.01); scene.add(leaf);
+
+  // magazine rack on the wainscot wall
+  for (const y of [1.45, 1.8]) {
+    bx(X0, X0 + 0.12, y, y + 0.012, -7.9, -7.2, blackMetal);
+    bx(X0 + 0.1, X0 + 0.12, y, y + 0.06, -7.9, -7.2, blackMetal);
+    for (let k = 0; k < 3; k++) {
+      const m = bx(X0 + 0.05, X0 + 0.058, y + 0.012, y + 0.28, -7.85 + k * 0.22, -7.65 + k * 0.22, labelMat(pick(['#e8dcc0', '#2b2b2b', '#c9d8b6', '#f3f0e8']), 'label'));
+      m.rotation.z = 0.18;
+    }
+  }
+
+  // tables, chairs and globe pendants
+  const woodChair = std({ map: oakTex, color: '#e0c4a0', roughness: 0.55 });
+  const velvet = std({ color: '#6b7d3e', roughness: 0.95 });
+  const tableWood = std({ map: oakTex, color: '#ead2b0', roughness: 0.45 });
+  const potMat = std({ color: '#151515', roughness: 0.6 });
+  const shrub = std({ color: '#5a7a35', roughness: 0.85, flatShading: true });
+  const backGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.17, 24, 1, true, -0.85, 1.7);
+  const chair = (x, z, ry) => {
+    const gp = new THREE.Group();
+    for (const [a, bb] of [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.42, 14), woodChair);
+      leg.position.set(a, 0.21, bb); gp.add(leg);
+    }
+    const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.235, 0.235, 0.07, 32), velvet);
+    seat.position.y = 0.46; gp.add(seat);
+    for (const a of [-0.17, 0.17]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.35, 10), woodChair);
+      post.position.set(a, 0.62, 0.17); gp.add(post);
+    }
+    const back = new THREE.Mesh(backGeo, new THREE.MeshStandardMaterial({ map: oakTex, color: '#e0c4a0', roughness: 0.55, side: THREE.DoubleSide }));
+    back.position.set(0, 0.74, -0.05); gp.add(back);
+    gp.position.set(x, 0, z); gp.rotation.y = ry; scene.add(gp);
+  };
+  const table = (x, z) => {
+    cyl(0.32, 0.32, 0.03, tableWood, x, 0.72, z, 40);
+    cyl(0.022, 0.022, 0.72, potMat, x, 0, z, 10);
+    cyl(0.22, 0.22, 0.015, potMat, x, 0, z, 32);
+    cyl(0.055, 0.045, 0.08, potMat, x + 0.05, 0.75, z - 0.05, 16);
+    const sh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.06, 1), shrub);
+    sh.position.set(x + 0.05, 0.86, z - 0.05); sh.scale.y = 1.2; scene.add(sh);
+  };
+  // chair backs face away from the table: back sits on +z of the chair, so ry turns it outward
+  for (const z of [-1.7, -3.0, -4.3, -5.6, -6.9]) { table(4.5, z); chair(3.9, z, -Math.PI / 2); }
+  for (const z of [-3.6, -5.2, -6.8]) { table(2.75, z); chair(2.75, z + 0.6, 0); chair(2.75, z - 0.6, Math.PI); }
+  const glow = std({ color: '#fff4e2', emissive: '#ffdcae', emissiveIntensity: 1.6, roughness: 0.3 });
+  const cord = std({ color: '#222', roughness: 0.5 });
+  for (const [x, z, y, r] of [[4.3, -1.3, 1.75, 0.13], [4.3, -3.6, 1.9, 0.15], [4.6, -5.9, 1.7, 0.12], [3.0, -4.4, 2.0, 0.13], [3.2, -7.4, 1.85, 0.15]]) {
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 20), glow);
+    ball.position.set(x, y, z); scene.add(ball);
+    cyl(0.004, 0.004, H - y - r, cord, x, y + r, z, 6);
+  }
+  for (const [x, z] of [[4.2, -2.4], [3.4, -6.2]]) {
+    const l = new THREE.PointLight('#ffd8a8', 1.6, 6, 1.8);
+    l.position.set(x, 1.9, z); scene.add(l);
+  }
+}
+
 // ---------- glass facade ----------
 {
   const T = 0.05;
@@ -623,7 +758,7 @@ poster((g, w, h) => {
 // ---------- building exterior + terrace ----------
 {
   bx(-7, -1.7, 0, H + 0.7, -0.35, 0, facadeMat);
-  bx(1.7, 9, 0, H + 0.7, -0.35, 0, facadeMat);
+  bx(5.85, 9, 0, H + 0.7, -0.35, 0, facadeMat);
   bx(-7, 9, H, H + 0.7, -0.35, 0, facadeMat);
   bx(-7, 9, H + 0.7, H + 0.85, -0.35, 1.0, std({ color: '#d9d4cc', roughness: 0.8 }));
   const sign = textPlane((g, w, h) => {
@@ -774,8 +909,14 @@ const KEYS = [
   [17, [1.15, 1.6, -4.4], 58, 4],
   [20.5, [1.2, 1.6, -7.3], 102, -3],
   [24, [1.25, 1.6, -8.25], 176, -3],
+  [27.5, [1.0, 1.6, -3.3], 205, -3],
+  [30.5, [0.45, 1.6, -1.55], 270, -2],
+  [33.5, [2.6, 1.6, -1.5], 272, -1],
+  [37, [3.3, 1.6, -1.0], 330, -5],
+  [41, [3.35, 1.55, -2.9], 350, -4],
+  [45, [3.0, 1.5, -4.4], 292, -3],
 ];
-const DURATION = 25;
+const DURATION = 46.5;
 const posCurve = new THREE.CatmullRomCurve3(KEYS.map((k) => new THREE.Vector3(...k[1])), false, 'centripetal');
 const angCurve = new THREE.CatmullRomCurve3(KEYS.map((k) => new THREE.Vector3(k[2], k[3], 0)), false, 'catmullrom', 0.5);
 function tourAt(t) {
